@@ -20,6 +20,23 @@ pipeline {
     }
 
     stages {
+        // Cloning Repository
+        stage('Clone Repository') {
+            steps {
+                script {
+                    echo "Cloning GitHub Repository..."
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: '*/main']], // Replace 'main' with your branch name if different
+                        userRemoteConfigs: [[
+                            url: 'https://github.com/Balajai331/UiPath.git', // Repository URL
+                            credentialsId: 'GitHub' // Jenkins credential ID for GitHub
+                        ]]
+                    ])
+                }
+            }
+        }
+
         // Printing Basic Information
         stage('Preparing') {
             steps {
@@ -65,6 +82,20 @@ pipeline {
                     createProcess: true // Mandatory parameter added
                 )
             }
+        }
+    }
+
+    // Post-build actions
+    post {
+        success {
+            echo 'Deployment has been completed!'
+        }
+        failure {
+            echo "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.JOB_DISPLAY_URL})"
+        }
+        always {
+            // Clean workspace
+            cleanWs()
         }
     }
 }
