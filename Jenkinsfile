@@ -20,23 +20,6 @@ pipeline {
     }
 
     stages {
-        // Cloning Repository
-        stage('Clone Repository') {
-            steps {
-                script {
-                    echo "Cloning GitHub Repository..."
-                    checkout([
-                        $class: 'GitSCM',
-                        branches: [[name: '*/main']], // Replace 'main' with your branch name if different
-                        userRemoteConfigs: [[
-                            url: 'https://github.com/Balajai331/UiPath.git', // Repository URL
-                            credentialsId: 'GitHub' // Jenkins credential ID for GitHub
-                        ]]
-                    ])
-                }
-            }
-        }
-
         // Printing Basic Information
         stage('Preparing') {
             steps {
@@ -64,38 +47,6 @@ pipeline {
                     traceLevel: 'None'
                 )
             }
-        }
-
-        // Deploying Tests
-        stage('Deploy Tests') {
-            steps {
-                echo "Deploying ${env.BRANCH_NAME} to orchestrator"
-                UiPathDeploy(
-                    packagePath: "Output/Tests/${env.BUILD_NUMBER}",
-                    orchestratorAddress: "${UIPATH_ORCH_URL}",
-                    orchestratorTenant: "${UIPATH_ORCH_TENANT_NAME}",
-                    folderName: "${UIPATH_ORCH_FOLDER_NAME}",
-                    environments: 'INT',
-                    credentials: Token(accountName: "${UIPATH_ORCH_LOGICAL_NAME}", credentialsId: 'APIUserKey'),
-                    traceLevel: 'None',
-                    entryPointPaths: 'Main.xaml',
-                    createProcess: true // Mandatory parameter added
-                )
-            }
-        }
-    }
-
-    // Post-build actions
-    post {
-        success {
-            echo 'Deployment has been completed!'
-        }
-        failure {
-            echo "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.JOB_DISPLAY_URL})"
-        }
-        always {
-            // Clean workspace
-            cleanWs()
         }
     }
 }
