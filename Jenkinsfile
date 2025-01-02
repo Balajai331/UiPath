@@ -27,7 +27,6 @@ pipeline {
                 echo "Jenkins URL: ${env.JENKINS_URL}"
                 echo "Jenkins JOB Number: ${env.BUILD_NUMBER}"
                 echo "Jenkins JOB Name: ${env.JOB_NAME}"
-        
             }
         }
 
@@ -43,7 +42,7 @@ pipeline {
                         $class: 'ManualVersionEntry',
                         version: "${MAJOR}.${MINOR}.${env.BUILD_NUMBER}"
                     ],
-                    useOrchestrator: false,
+                    useOrchestrator: true,  // Set to 'true' to use Orchestrator
                     traceLevel: 'None'
                 )
             }
