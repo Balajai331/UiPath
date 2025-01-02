@@ -11,14 +11,21 @@ pipeline {
     }
 
     stages {
-        // Checkout Code from SCM
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
+        
+        stage('Extract Branch Name') {
+            steps {
+                script {
+                    env.BRANCH_NAME = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
+                }
+                echo "Branch Name: ${env.BRANCH_NAME}"
+            }
+        }
 
-        // Preparing and Printing Basic Information
         stage('Preparing') {
             steps {
                 echo "Jenkins Home: ${env.JENKINS_HOME}"
@@ -29,7 +36,6 @@ pipeline {
             }
         }
 
-        // Building Tests
         stage('Build Tests') {
             steps {
                 echo "Building package with ${WORKSPACE}"
