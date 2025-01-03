@@ -31,6 +31,32 @@ pipeline {
             }
         }
 
+        // Cloning the repository
+        stage('Clone') {
+            steps {
+                git (
+                    branch: 'main',
+                    url: 'https://github.com/al3xandru-uipath-qa/CI-Plugins-Customer-Support.git'
+                )
+            }
+        }
+        
+        // Installing Platform
+        stage('Install Platform') {
+            steps {
+                UiPathInstallPlatform (
+                    traceLevel: 'Information'
+                )
+            }
+        }
+        
+        // Copying nuget.config
+        stage('Copy nuget.config') {
+            steps {
+                bat 'copy nuget.config CLI\\nuget.config'
+            }
+        }
+
         // Building Tests
         stage('Build Tests') {
             steps {
@@ -43,42 +69,10 @@ pipeline {
                         $class: 'ManualVersionEntry',
                         version: "${MAJOR}.${MINOR}.${env.BUILD_NUMBER}"
                     ],
-                    useOrchestrator: true,
+                    useOrchestrator: false,
                     traceLevel: 'None'
                 )
             }
-        }
-
-        // Deploying Tests
-        stage('Deploy Tests') {
-            steps {
-                echo "Deploying ${env.BRANCH_NAME} to orchestrator"
-                UiPathDeploy(
-                    packagePath: "Output/Tests/${env.BUILD_NUMBER}",
-                    orchestratorAddress: "${UIPATH_ORCH_URL}",
-                    orchestratorTenant: "${UIPATH_ORCH_TENANT_NAME}",
-                    folderName: "${UIPATH_ORCH_FOLDER_NAME}",
-                    environments: 'INT',
-                    credentials: Token(accountName: "${UIPATH_ORCH_LOGICAL_NAME}", credentialsId: 'APIUserKey'),
-                    traceLevel: 'None',
-                    entryPointPaths: 'Main.xaml',
-                    createProcess: true // Mandatory parameter added
-                )
-            }
-        }
-    }
-
-    // Post-build actions
-    post {
-        success {
-            echo 'Deployment has been completed!'
-        }
-        failure {
-            echo "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.JOB_DISPLAY_URL})"
-        }
-        always {
-            // Clean workspace
-            cleanWs()
         }
     }
 }
