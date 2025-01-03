@@ -36,7 +36,7 @@ pipeline {
             steps {
                 git (
                     branch: 'main',
-                    url: 'https://github.com/al3xandru-uipath-qa/CI-Plugins-Customer-Support.git'
+                    url: 'https://github.com/Balajai331/UiPath.git'
                 )
             }
         }
