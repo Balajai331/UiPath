@@ -74,5 +74,23 @@ pipeline {
                 )
             }
         }
+        
+        // Deploying Tests
+        stage('Deploy Tests') {
+            steps {
+                echo "Deploying ${env.BRANCH_NAME} to orchestrator"
+                UiPathDeploy(
+                    packagePath: "Output/Tests/${env.BUILD_NUMBER}",
+                    orchestratorAddress: "${UIPATH_ORCH_URL}",
+                    orchestratorTenant: "${UIPATH_ORCH_TENANT_NAME}",
+                    folderName: "${UIPATH_ORCH_FOLDER_NAME}",
+                    environments: 'INT',
+                    credentials: Token(accountName: "${UIPATH_ORCH_LOGICAL_NAME}", credentialsId: 'APIUserKey'),
+                    traceLevel: 'None',
+                    entryPointPaths: 'Main.xaml',
+                    createProcess: true // Mandatory parameter added
+                )
+            }
+        }
     }
 }
