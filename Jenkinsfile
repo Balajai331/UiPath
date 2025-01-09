@@ -1,94 +1,44 @@
 pipeline {
     agent any
 
-    // Environment Variables
-    environment {
-        MAJOR = '1'
-        MINOR = '0'
-        // Orchestrator Services
-        UIPATH_ORCH_URL = "https://cloud.uipath.com/qbotitiqbbux/"
-        UIPATH_ORCH_LOGICAL_NAME = "qBotitiqbbux"
-        UIPATH_ORCH_TENANT_NAME = "CICD"
-        UIPATH_ORCH_FOLDER_NAME = "ProcessTest_CICD"
-    }
-
-    // Options for the pipeline
-    options {
-        // Timeout for pipeline execution
-        timeout(time: 80, unit: 'MINUTES')
-        skipDefaultCheckout()
-    }
-
     stages {
-        // Printing Basic Information
-        stage('Preparing') {
-            steps {
-                echo "Jenkins Home: ${env.JENKINS_HOME}"
-                echo "Jenkins URL: ${env.JENKINS_URL}"
-                echo "Jenkins JOB Number: ${env.BUILD_NUMBER}"
-                echo "Jenkins JOB Name: ${env.JOB_NAME}"
-                echo "GitHub Branch Name: ${env.BRANCH_NAME}"
-            }
-        }
-
-        // Cloning the repository
-        stage('Clone') {
-            steps {
-                git (
-                    branch: 'main',
-                    url: 'https://github.com/Balajai331/UiPath.git'
-                )
-            }
-        }
         
-        // Installing Platform
         stage('Install Platform') {
             steps {
-                UiPathInstallPlatform (
-                    traceLevel: 'Information'
-                )
-            }
-        }
-        
-        // Copying nuget.config
-        stage('Copy nuget.config') {
-            steps {
-                bat 'copy nuget.config CLI\\nuget.config'
+                UiPathInstallPlatform(traceLevel: 'Verbose')
             }
         }
 
-        // Building Tests
-        stage('Build Tests') {
+        stage('Pack') {
             steps {
-                echo "Building package with ${WORKSPACE}"
                 UiPathPack(
-                    outputPath: "Output/Tests/${env.BUILD_NUMBER}",
-                    outputType: 'Tests',
-                    projectJsonPath: "project.json",
-                    version: [
-                        $class: 'ManualVersionEntry',
-                        version: "${MAJOR}.${MINOR}.${env.BUILD_NUMBER}"
-                    ],
-                    useOrchestrator: false,
-                    traceLevel: 'None'
+                    disableBuiltInNugetFeeds: false,
+                    outputPath: "${WORKSPACE}\\Output",
+                    projectJsonPath: "${WORKSPACE}\\src\\project.json",
+                    traceLevel: 'Verbose',
+                    version: AutoVersion()
                 )
             }
         }
-        
-        // Deploying Tests
-        stage('Deploy Tests') {
+
+        stage('Deploy') {
             steps {
-                echo "Deploying ${env.BRANCH_NAME} to orchestrator"
                 UiPathDeploy(
-                    packagePath: "Output/Tests/${env.BUILD_NUMBER}",
-                    orchestratorAddress: "${UIPATH_ORCH_URL}",
-                    orchestratorTenant: "${UIPATH_ORCH_TENANT_NAME}",
-                    folderName: "${UIPATH_ORCH_FOLDER_NAME}",
-                    environments: 'INT',
-                    credentials: Token(accountName: "${UIPATH_ORCH_LOGICAL_NAME}", credentialsId: 'APIUserKey'),
-                    traceLevel: 'None',
+                    createProcess: true,
+                    credentials: ExternalApp(
+                        accountForApp: 'qbotitiqbbux',
+                        applicationId: '545b32c5-558b-4024-aab5-e4032da1f2a8',
+                        applicationScope: 'OR.Assets OR.Folders OR.BackgroundTasks OR.TestSets OR.TestSetExecutions OR.TestSetSchedules OR.Settings.Read OR.Robots.Read OR.Machines.Read OR.Execution OR.Users.Read OR.Jobs OR.Monitoring',
+                        applicationSecret: '545b32c5-558b-4024-aab5-e4032da1f2a8',
+                        identityUrl: '' // Add the valid identity URL if required
+                    ),
                     entryPointPaths: 'Main.xaml',
-                    createProcess: true // Mandatory parameter added
+                    folderName: 'ProcessTest_CICD',
+                    orchestratorAddress: 'https://cloud.uipath.com/',
+                    orchestratorTenant: 'CICD',
+                    packagePath: "${WORKSPACE}\\Output",
+                    environments: 'Development', // Specify the environment(s) here
+                    traceLevel: 'Verbose'
                 )
             }
         }
