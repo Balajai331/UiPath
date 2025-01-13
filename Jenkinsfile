@@ -43,4 +43,11 @@ pipeline {
             }
         }
     }
+
+    post {
+        always {
+            echo 'Cleaning up the workspace...'
+            deleteDir() // This clears all files in the workspace
+        }
+    }
 }
