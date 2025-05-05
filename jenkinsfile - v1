@@ -1,0 +1,62 @@
+pipeline {   
+    agent any
+
+    stages {
+
+        stage('Install Platform') {
+            steps {
+                UiPathInstallPlatform(traceLevel: 'Verbose')
+            }
+        } 
+
+        stage('Pack') {
+            steps {
+                UiPathPack(
+                    disableBuiltInNugetFeeds: false,
+                    outputPath: "${WORKSPACE}\\Output",
+                    projectJsonPath: "${WORKSPACE}\\src\\project.json",
+                    traceLevel: 'Verbose',
+                    version: AutoVersion()
+                )
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    // Generate unique timestamp-based process name
+                    def timestamp = new Date().format("yyyyMMdd_HHmmss")
+                    def processName = "CSAOE_Dispatcher_${timestamp}"
+
+                    echo "Generated process name: ${processName}"
+
+                    UiPathDeploy(
+                        createProcess: true,
+                        processName: processName,
+                        credentials: ExternalApp(
+                            accountForApp: 'qbotitiqbbux',
+                            applicationId: '545b32c5-558b-4024-aab5-e4032da1f2a8',
+                            applicationScope: 'OR.Assets OR.Folders OR.BackgroundTasks OR.TestSets OR.TestSetExecutions OR.TestSetSchedules OR.Settings.Read OR.Robots.Read OR.Machines.Read OR.Execution OR.Users.Read OR.Jobs OR.Monitoring',
+                            applicationSecret: '545b32c5-558b-4024-aab5-e4032da1f2a8',
+                            identityUrl: '' // Optional: add identity URL if required
+                        ),
+                        entryPointPaths: 'Main.xaml',
+                        folderName: 'Repo1',
+                        orchestratorAddress: 'https://cloud.uipath.com/',
+                        orchestratorTenant: 'CICD',
+                        packagePath: "${WORKSPACE}\\Output",
+                        environments: 'Development',
+                        traceLevel: 'Verbose'
+                    )
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Cleaning up the workspace...'
+            deleteDir() // This clears all files in the workspace
+        }
+    }
+}
